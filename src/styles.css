@@ -1,0 +1,44 @@
+/* تنسيق أساسي للواجهة */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  /* اتجاه من اليمين إلى اليسار للغة العربية */
+  direction: rtl;
+  background-color: #f5f5f5;
+}
+
+.container {
+  display: flex;
+  padding: 20px;
+}
+
+.left {
+  width: 40%;
+  padding: 10px;
+  border-right: 1px solid #ccc;
+}
+
+.right {
+  width: 60%;
+  padding: 10px;
+}
+
+form div {
+  margin-bottom: 10px;
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+button {
+  padding: 8px 12px;
+  margin: 5px 2px;
+}
+
+h2 {
+  margin-top: 0;
+}
