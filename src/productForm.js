@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useBarcodeScanner from './BarcodeScanner';
 
-const ProductForm = ({ onAdd, onAddToWarehouse, onEdit, initialData, existingBarcodes, products }) => {
+const ProductForm = ({ onAdd, onAddToWarehouse, onEdit, initialData, existingBarcodes, products, onCreatePendingRequest, disableEditOnExistingBarcode = false, clearInitialData }) => {
   const [formData, setFormData] = useState({
     name: '',
     barcode: '',
     price: '',
     category: '',
-    quantity: 1
+    quantity: 1,
+    isExistingProduct: false
   }); 
   const [scanning, setScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState('');
@@ -20,27 +21,47 @@ const ProductForm = ({ onAdd, onAddToWarehouse, onEdit, initialData, existingBar
         barcode: initialData.barcode || '',
         price: initialData.price || '',
         category: initialData.category || '',
-        quantity: initialData.quantity || 1
+        quantity: initialData.quantity || 1,
+        isExistingProduct: true,
+        id: initialData.id
+      });
+    } else {
+      setFormData({
+        name: '',
+        barcode: '',
+        price: '',
+        category: '',
+        quantity: 1,
+        isExistingProduct: false
       });
     }
   }, [initialData]);
 
+
   const handleBarcodeDetected = (code) => {
     console.log('ProductForm handleBarcodeDetected called with code:', code);
-    setFormData(prev => ({ ...prev, barcode: code }));
-    setScanning(false);
-    setScanStatus('تم اكتشاف الباركود: ' + code);
-
-    // Auto-submit the form if product exists
     const existingProduct = products.find(p => p.barcode === code);
     if (existingProduct) {
-      console.log('ProductForm found existing product for barcode:', code, existingProduct);
-      if (onAddToWarehouse) {
-        onAddToWarehouse(existingProduct.id, 1);
-        alert('تم تحديث كمية المنتج في المخزن تلقائياً');
+      if (disableEditOnExistingBarcode) {
+        setFormData(prev => ({ ...prev, barcode: code, isExistingProduct: false }));
+        setScanStatus('تم اكتشاف الباركود: ' + code);
+      } else {
+        setFormData({
+          name: existingProduct.name,
+          barcode: existingProduct.barcode,
+          price: existingProduct.price,
+          category: existingProduct.category,
+          quantity: 1,
+          isExistingProduct: true,
+          id: existingProduct.id
+        });
+        setScanStatus('تم اكتشاف منتج موجود مسبقاً: ' + existingProduct.name);
       }
+    } else {
+      setFormData(prev => ({ ...prev, barcode: code, isExistingProduct: false }));
+      setScanStatus('تم اكتشاف الباركود: ' + code);
     }
-
+    setScanning(false);
     setTimeout(() => setScanStatus(''), 3000);
   };
 
@@ -90,13 +111,17 @@ const ProductForm = ({ onAdd, onAddToWarehouse, onEdit, initialData, existingBar
         quantity: formData.quantity
       });
     } else {
-      // Add new product
-      const existingProduct = products.find(p => p.barcode === formData.barcode.trim());
-
-      if (existingProduct) {
-        if (onAddToWarehouse) {
-          onAddToWarehouse(existingProduct.id, formData.quantity);
-          alert('تم تحديث كمية المنتج في المخزن');
+      // Add new product or create pending request for existing product
+      if (formData.isExistingProduct) {
+        if (window.confirm(`المنتج موجود بالفعل: ${formData.name}. هل تريد إنشاء طلب زيادة الكمية والسعر؟`)) {
+          if (onCreatePendingRequest) {
+            onCreatePendingRequest({
+              productId: formData.id,
+              price: price,
+              quantity: formData.quantity
+            });
+            alert('تم إنشاء طلب انتظار للموافقة');
+          }
         }
       } else {
         if (onAdd) {
@@ -117,7 +142,7 @@ const ProductForm = ({ onAdd, onAddToWarehouse, onEdit, initialData, existingBar
       }
     }
     
-    setFormData({ name: '', barcode: '', price: '', category: '', quantity: 1 });
+    setFormData({ name: '', barcode: '', price: '', category: '', quantity: 1, isExistingProduct: false });
   };
 
   const toggleScanner = () => {
@@ -137,6 +162,7 @@ const ProductForm = ({ onAdd, onAddToWarehouse, onEdit, initialData, existingBar
           value={formData.name}
           onChange={handleChange}
           style={styles.input}
+          disabled={formData.isExistingProduct}
         />
       </div>
 
@@ -168,11 +194,13 @@ const ProductForm = ({ onAdd, onAddToWarehouse, onEdit, initialData, existingBar
               value={formData.barcode}
               onChange={handleChange}
               style={styles.input}
+              disabled={formData.isExistingProduct}
             />
             <button
               type="button"
               onClick={toggleScanner}
               style={styles.scanButton}
+              disabled={formData.isExistingProduct}
             >
               مسح باركود
             </button>
@@ -201,6 +229,7 @@ const ProductForm = ({ onAdd, onAddToWarehouse, onEdit, initialData, existingBar
           value={formData.category}
           onChange={handleChange}
           style={styles.input}
+          disabled={formData.isExistingProduct}
         />
       </div>
 
@@ -218,7 +247,7 @@ const ProductForm = ({ onAdd, onAddToWarehouse, onEdit, initialData, existingBar
       </div>
       
       <button type="submit" style={styles.submitButton}>
-        إضافة منتج
+        {formData.isExistingProduct ? 'إنشاء طلب انتظار' : 'إضافة منتج'}
       </button>
     </form>
   );

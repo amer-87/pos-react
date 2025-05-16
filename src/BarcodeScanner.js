@@ -49,11 +49,28 @@ const useBarcodeScanner = (videoRef, onDetect, isActive) => {
         Quagga.start();
       });
 
+      let lastDetectedCode = null;
+      let resetTimeout = null;
+
       Quagga.onDetected((result) => {
         if (result && result.codeResult && result.codeResult.code) {
-          console.log('Quagga detected barcode:', result.codeResult.code);
-          onDetect(result.codeResult.code);
-          Quagga.stop();
+          let code = result.codeResult.code;
+          if (code) {
+            code = code.trim();
+          }
+          if (code !== lastDetectedCode) {
+            console.log('Quagga detected barcode:', code);
+            onDetect(code);
+            lastDetectedCode = code;
+
+            if (resetTimeout) {
+              clearTimeout(resetTimeout);
+            }
+            // Reset lastDetectedCode after 3 seconds to allow re-detection of the same barcode
+            resetTimeout = setTimeout(() => {
+              lastDetectedCode = null;
+            }, 3000);
+          }
         } else {
           console.log('Quagga detected no valid barcode in this detection event');
         }

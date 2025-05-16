@@ -1,16 +1,9 @@
 import React from 'react';
+import PropTypes from 'prop-types';
+import { calculateTotals } from './utils/calcTotals';
 
 const Cart = ({ cartItems, onUpdateQuantity, discount = 0, tax = 0 }) => {
-  const calculateSubtotal = () => {
-    return cartItems.reduce((total, item) => {
-      return total + (item.product.price || 0) * item.quantity;
-    }, 0);
-  };
-
-  const subtotal = calculateSubtotal();
-  const discountAmount = (subtotal * discount) / 100;
-  const taxAmount = ((subtotal - discountAmount) * tax) / 100;
-  const total = subtotal - discountAmount + taxAmount;
+  const { subtotal, discountAmount, taxAmount, total } = calculateTotals(cartItems, discount, tax);
 
   const handleDecrease = (productId, currentQuantity) => {
     if (currentQuantity > 1) {
@@ -52,13 +45,17 @@ const Cart = ({ cartItems, onUpdateQuantity, discount = 0, tax = 0 }) => {
                   borderBottom: '1px solid #eee'
                 }}
               >
-                <div>
-                  <div>{item.product.name}</div>
-                  <div style={{ fontSize: '0.8em', color: '#666' }}>
-                    {item.product.price} ر.س × {item.quantity}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '1.1em' }}>{item.product.name}</div>
+                  <div style={{ fontSize: '0.9em', color: '#444', marginTop: '4px' }}>
+                    <span style={{ marginRight: '15px' }}>السعر: {item.product.price.toFixed(2)} ر.س</span>
+                    <span>الكمية: {item.quantity}</span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '1em', minWidth: '80px', textAlign: 'right', color: '#222' }}>
+                  الإجمالي: {(item.product.price * item.quantity).toFixed(2)} ر.س
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '15px' }}>
                   <button
                     onClick={() => handleDecrease(item.product.id, item.quantity)}
                     style={{
@@ -73,7 +70,6 @@ const Cart = ({ cartItems, onUpdateQuantity, discount = 0, tax = 0 }) => {
                   >
                     -
                   </button>
-                  <span>{item.quantity}</span>
                   <button
                     onClick={() => handleIncrease(item.product.id, item.quantity)}
                     style={{
@@ -88,9 +84,6 @@ const Cart = ({ cartItems, onUpdateQuantity, discount = 0, tax = 0 }) => {
                   >
                     +
                   </button>
-                  <div>
-                    {(item.product.price * item.quantity).toFixed(2)} ر.س
-                  </div>
                 </div>
               </div>
             ))}
@@ -141,6 +134,13 @@ const Cart = ({ cartItems, onUpdateQuantity, discount = 0, tax = 0 }) => {
       )}
     </div>
   );
+};
+
+Cart.propTypes = {
+  cartItems: PropTypes.array.isRequired,
+  onUpdateQuantity: PropTypes.func.isRequired,
+  discount: PropTypes.number,
+  tax: PropTypes.number,
 };
 
 export default Cart;

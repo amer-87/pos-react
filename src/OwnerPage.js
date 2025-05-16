@@ -1,13 +1,25 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import ProductForm from './productForm';
-import ProductList from './productList';
 
 const OwnerPage = ({ products, warehouse, onAddProduct, onDeleteProduct, onAddToCart, cartItems, onAddToWarehouse }) => {
-  const navigate = useNavigate();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [initialData, setInitialData] = useState(null);
 
   const handleAddProduct = async (product) => {
+    // Check if product barcode exists and is in stock
+    const existingProduct = products.find(p => p.barcode === product.barcode);
+    if (existingProduct) {
+      const inStock = warehouse.some(item => item.productId === existingProduct.id && item.quantity > 0);
+      if (inStock) {
+        // Switch to edit mode with existing product data, disable barcode editing
+        setInitialData({
+          ...existingProduct,
+          quantity: product.quantity || 1
+        });
+        return;
+      }
+    }
+
     const newProduct = await onAddProduct(product);
     if (newProduct && onAddToWarehouse) {
       onAddToWarehouse(newProduct.id, product.quantity || 1);
@@ -16,24 +28,16 @@ const OwnerPage = ({ products, warehouse, onAddProduct, onDeleteProduct, onAddTo
         setShowSuccessMessage(false);
       }, 1000);
     }
-    // Removed navigation to warehouse page to stay on OwnerPage
-    // navigate('/warehouse');
+    setInitialData(null);
   };
 
   const handleAddToWarehouse = (productId, quantity) => {
     onAddToWarehouse(productId, quantity);
-    // Removed navigation to warehouse page to stay on OwnerPage
-    // navigate('/warehouse');
   };
 
-  // Merge products with warehouse quantities
-  const productsWithQuantity = products.map(product => {
-    const warehouseItem = warehouse.find(item => item.productId === product.id);
-    return {
-      ...product,
-      quantity: warehouseItem ? warehouseItem.quantity : 0
-    };
-  });
+  const clearInitialData = () => {
+    setInitialData(null);
+  };
 
   return (
     <div style={{ padding: '20px' }}>
@@ -57,8 +61,14 @@ const OwnerPage = ({ products, warehouse, onAddProduct, onDeleteProduct, onAddTo
           تم اضافة المنتج الى المخزن بنجاح
         </div>
       )}
-      <ProductForm onAdd={handleAddProduct} onAddToWarehouse={handleAddToWarehouse} products={products} />
-      {/* Removed ProductList from OwnerPage as it is moved to WarehousePage */}
+      <ProductForm 
+        onAdd={handleAddProduct} 
+        onAddToWarehouse={handleAddToWarehouse} 
+        products={products} 
+        disableEditOnExistingBarcode={true}
+        initialData={initialData}
+        clearInitialData={clearInitialData}
+      />
     </div>
   );
 };

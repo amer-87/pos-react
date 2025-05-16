@@ -1,15 +1,13 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Printer, Text, Row, Cut, render } from 'react-thermal-printer';
+import { calculateTotals } from './utils/calcTotals';
 
-const ReceiptPrinter = ({ cartItems, onPrintComplete }) => {
+const ReceiptPrinter = ({ cartItems, discount = 0, tax = 0, onPrintComplete }) => {
   // دالة لطباعة الفاتورة
   const printReceipt = async () => {
-    // حساب الإجمالي الكلي قبل الطباعة
-    const total = cartItems.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
-      0
-    );
- 
+    const { total } = calculateTotals(cartItems, discount, tax);
+
     // إعداد محتوى الفاتورة باستخدام مكونات react-thermal-printer
     const receipt = (
       <Printer type="epson" width={48}>
@@ -20,11 +18,11 @@ const ReceiptPrinter = ({ cartItems, onPrintComplete }) => {
           <Row
             key={item.product.id}
             left={`${item.product.name} x ${item.quantity}`}
-            right={`${item.product.price * item.quantity} د.ج`}
+            right={`${(item.product.price * item.quantity).toFixed(2)} ر.س`}
           />
         ))}
         <Text>-----------------------------</Text>
-        <Row left="الإجمالي" right={`${total} د.ج`} />
+        <Row left="الإجمالي" right={`${total.toFixed(2)} ر.س`} />
         {/* قطع الورقة بعد الطباعة */}
         <Cut />
       </Printer>
@@ -33,7 +31,6 @@ const ReceiptPrinter = ({ cartItems, onPrintComplete }) => {
     // توليد بيانات الطباعة (Uint8Array)
     const data = await render(receipt);
     console.log(data); // يمكن إرسال البيانات هذه إلى الطابعة الفعلية
-    alert('تمت طباعة الفاتورة بنجاح');
     if (onPrintComplete) {
       onPrintComplete();
     }
@@ -45,6 +42,13 @@ const ReceiptPrinter = ({ cartItems, onPrintComplete }) => {
       <button onClick={printReceipt}>طباعة الفاتورة</button>
     </div>
   );
+};
+
+ReceiptPrinter.propTypes = {
+  cartItems: PropTypes.array.isRequired,
+  discount: PropTypes.number,
+  tax: PropTypes.number,
+  onPrintComplete: PropTypes.func,
 };
 
 export default ReceiptPrinter;

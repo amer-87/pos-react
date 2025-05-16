@@ -59,9 +59,25 @@ const loadData = (key) => {
 };
 
 const App = () => {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState([
+    { id: 1, name: 'amre', price: 1, barcode: '0001' },
+    { id: 2, name: 'فتفتت', price: 1500, barcode: '0002' },
+    { id: 3, name: 'ahmed', price: 500, barcode: '0003' },
+    { id: 4, name: 'hussan', price: 750, barcode: '0004' },
+    { id: 5, name: 'بطل', price: 1000, barcode: '0005' },
+    { id: 6, name: 'كلينس', price: 2000, barcode: '0006' },
+    { id: 7, name: 'معقم', price: 5454, barcode: '0007' }
+  ]);
   const [cart, setCart] = useState([]);
-  const [warehouse, setWarehouse] = useState([]);
+  const [warehouse, setWarehouse] = useState([
+    { productId: 1, quantity: 15 },
+    { productId: 2, quantity: 6 },
+    { productId: 3, quantity: 2 },
+    { productId: 4, quantity: 3 },
+    { productId: 5, quantity: 12 },
+    { productId: 6, quantity: 12 },
+    { productId: 7, quantity: 6 }
+  ]);
   const quaggaInitialized = useRef(false);
 
   // تحميل البيانات عند التحميل الأولي مع تنظيف بيانات المخزن غير المتوافقة
@@ -69,15 +85,17 @@ const App = () => {
     const loadedProducts = loadData(STORAGE_KEYS.PRODUCTS);
     const loadedWarehouse = loadData(STORAGE_KEYS.WAREHOUSE);
 
-    // إنشاء مجموعة من معرفات المنتجات لتحقق التوافق
-    const productIds = new Set(loadedProducts.map(p => p.id));
+    if (loadedProducts.length > 0) {
+      // إنشاء مجموعة من معرفات المنتجات لتحقق التوافق
+      const productIds = new Set(loadedProducts.map(p => p.id));
 
-    // تصفية عناصر المخزن التي لها معرف منتج صالح فقط مع إزالة العناصر الفارغة أو غير الصالحة
-    const filteredWarehouse = loadedWarehouse.filter(item => item && item.productId && productIds.has(item.productId));
+      // تصفية عناصر المخزن التي لها معرف منتج صالح فقط مع إزالة العناصر الفارغة أو غير الصالحة
+      const filteredWarehouse = loadedWarehouse.filter(item => item && item.productId && productIds.has(item.productId));
 
-    setProducts(loadedProducts);
-    setCart(loadData(STORAGE_KEYS.CART));
-    setWarehouse(filteredWarehouse);
+      setProducts(loadedProducts);
+      setCart(loadData(STORAGE_KEYS.CART));
+      setWarehouse(filteredWarehouse);
+    }
   }, []);
 
   // حفظ البيانات عند التغيير
@@ -105,13 +123,67 @@ const App = () => {
 
   const addToCart = useCallback((product) => {
     setCart(prevCart => {
-      // Always add a new entry for the product to have its own row
-      return [...prevCart, { product, quantity: 1 }];
+      const existingIndex = prevCart.findIndex(item => item.product.id === product.id);
+      if (existingIndex !== -1) {
+        const updatedCart = [...prevCart];
+        const existingItem = updatedCart[existingIndex];
+        updatedCart[existingIndex] = { ...existingItem, quantity: existingItem.quantity + 1 };
+        return updatedCart;
+      } else {
+        return [...prevCart, { product, quantity: 1 }];
+      }
     });
   }, []);
 
   const updateCartQuantity = useCallback((productId, quantity) => {
     setCart(prevCart => {
+      const existingItem = prevCart.find(item => item.product.id === productId);
+      const previousQuantity = existingItem ? existingItem.quantity : 0;
+      const quantityDifference = previousQuantity - quantity;
+
+      // Get available warehouse stock for product
+      const warehouseEntry = warehouse.find(item => item.productId === productId);
+      const availableStock = warehouseEntry ? warehouseEntry.quantity : 0;
+
+      // If increasing quantity, check if it exceeds available stock
+      if (quantity > previousQuantity && quantityDifference < 0) {
+        const requestedIncrease = quantity - previousQuantity;
+        if (requestedIncrease > availableStock) {
+          alert('لا يمكن زيادة الكمية أكثر من الكمية المتوفرة في المخزن.');
+          return prevCart; // Do not update cart
+        }
+      }
+
+      // Update warehouse stock based on quantity difference
+      if (quantityDifference > 0) {
+        // Quantity decreased, return stock to warehouse
+        setWarehouse(prevWarehouse => {
+          const index = prevWarehouse.findIndex(item => item.productId === productId);
+          if (index !== -1) {
+            const updatedWarehouse = [...prevWarehouse];
+            updatedWarehouse[index] = {
+              ...updatedWarehouse[index],
+              quantity: updatedWarehouse[index].quantity + quantityDifference
+            };
+            return updatedWarehouse;
+          }
+          // If product not found in warehouse, add it
+          return [...prevWarehouse, { productId, quantity: quantityDifference }];
+        });
+      } else if (quantityDifference < 0) {
+        // Quantity increased, reduce stock from warehouse
+        const reduceAmount = -quantityDifference;
+        setWarehouse(prevWarehouse => {
+          return prevWarehouse.map(item => {
+            if (item.productId === productId) {
+              const newQuantity = item.quantity - reduceAmount;
+              return { ...item, quantity: newQuantity > 0 ? newQuantity : 0 };
+            }
+            return item;
+          });
+        });
+      }
+
       if (quantity <= 0) {
         // Remove item if quantity is zero or less
         return prevCart.filter(item => item.product.id !== productId);
@@ -120,23 +192,35 @@ const App = () => {
         item.product.id === productId ? { ...item, quantity } : item
       );
     });
-  }, []);
+  }, [warehouse]);
 
   const addProduct = useCallback((product) => {
     return new Promise((resolve, reject) => {
       setProducts(prevProducts => {
-        const isDuplicate = prevProducts.some(p => p.barcode === product.barcode);
-        if (isDuplicate) {
-          alert('الباركود موجود مسبقاً!');
-          resolve(null);
-          return prevProducts;
+        // Check if barcode exists in products
+        const existingProduct = prevProducts.find(p => p.barcode === product.barcode);
+        if (existingProduct) {
+          // Check if product is in warehouse with quantity > 0
+          const inStock = warehouse.some(item => item.productId === existingProduct.id && item.quantity > 0);
+          if (inStock) {
+            alert('الباركود موجود مسبقاً!');
+            resolve(null);
+            return prevProducts;
+          } else {
+            // Product exists but not in stock, allow adding by updating existing product
+            const updatedProducts = prevProducts.map(p =>
+              p.id === existingProduct.id ? { ...p, ...product } : p
+            );
+            resolve(existingProduct);
+            return updatedProducts;
+          }
         }
         const newProduct = { ...product, id: Date.now() };
         resolve(newProduct);
         return [...prevProducts, newProduct];
       });
     });
-  }, []);
+  }, [warehouse]);
 
   const deleteProduct = useCallback((id) => {
     if (window.confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
@@ -151,12 +235,11 @@ const App = () => {
       // Check if productId already exists in warehouse
       const existingEntryIndex = prevWarehouse.findIndex(item => item.productId === productId);
       if (existingEntryIndex !== -1) {
-        // Update quantity of existing entry
+        const existingEntry = prevWarehouse[existingEntryIndex];
+        // Add the new quantity to the existing quantity
+        const updatedQuantity = existingEntry.quantity + quantity;
         const updatedWarehouse = [...prevWarehouse];
-        updatedWarehouse[existingEntryIndex] = {
-          ...updatedWarehouse[existingEntryIndex],
-          quantity: updatedWarehouse[existingEntryIndex].quantity + quantity
-        };
+        updatedWarehouse[existingEntryIndex] = { productId, quantity: updatedQuantity };
         return updatedWarehouse;
       } else {
         // Add new entry for productId
@@ -212,6 +295,12 @@ const App = () => {
     }
   };
 
+  const clearCart = useCallback(() => {
+    console.log('clearCart called - clearing cart state and localStorage');
+    setCart([]);
+    localStorage.removeItem(STORAGE_KEYS.CART);
+  }, []);
+
   return (
     <Router>
       <nav style={{ padding: '10px', backgroundColor: '#3498db', color: 'white', display: 'flex', gap: '20px' }}>
@@ -223,7 +312,7 @@ const App = () => {
         <Route path="/" element={<OwnerPage products={products} warehouse={warehouse} onAddProduct={addProduct} onDeleteProduct={deleteProduct} onAddToCart={addToCart} cartItems={cart} onAddToWarehouse={addToWarehouse} />} />
         <Route path="/owner" element={<OwnerPage products={products} warehouse={warehouse} onAddProduct={addProduct} onDeleteProduct={deleteProduct} onAddToCart={addToCart} cartItems={cart} onAddToWarehouse={addToWarehouse} />} />
         <Route path="/warehouse" element={<WarehousePage products={products} warehouse={warehouse} onAddProduct={addProduct} onAddToWarehouse={addToWarehouse} onDeleteProduct={deleteProduct} onAddToCart={addToCart} onUpdateWarehouse={setWarehouseQuantity} cartItems={cart} onEditProduct={editProduct} onDeleteAllProducts={deleteAllWarehouseProducts} />} />
-        <Route path="/seller" element={<SellerPage products={products} cartItems={cart} onAddToCart={addToCart} onUpdateQuantity={updateCartQuantity} onReduceWarehouseStock={reduceWarehouseStock} warehouse={warehouse} />} />
+        <Route path="/seller" element={<SellerPage products={products} cartItems={cart} onAddToCart={addToCart} onUpdateQuantity={updateCartQuantity} onReduceWarehouseStock={reduceWarehouseStock} warehouse={warehouse} onClearCart={clearCart} />} />
       </Routes>
       {/* Removed the red "مسح كل منتجات المخزن" button as per user request */}
       {/* <div style={{ padding: '20px' }}>

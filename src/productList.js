@@ -7,7 +7,7 @@ const ProductList = ({ products, onDelete, onModify, cartItems = [], editingProd
       <div style={{
         padding: '20px',
         border: '1px solid #eee',
-        borderRadius: '8px', 
+        borderRadius: '8px',  
         textAlign: 'center'
       }}>
         لا يوجد منتجات متاحة

@@ -74,7 +74,8 @@ const WarehousePage = ({ products = [], warehouse = [], onDeleteProduct, onAddTo
       id: editingItem.productId,
       name: editForm.name,
       price: price,
-      category: editForm.category
+      category: editForm.category,
+      barcode: productMap[editingItem.productId]?.barcode || ''
     });
     setEditingItem(null);
   };
