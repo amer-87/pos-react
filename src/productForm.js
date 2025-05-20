@@ -216,7 +216,7 @@ const ProductForm = ({ onAdd, onAddToWarehouse, onEdit, initialData, existingBar
           value={formData.price}
           onChange={handleChange}
           min="0"
-          step="0.01"
+          step="0"
           style={styles.input}
         />
       </div>

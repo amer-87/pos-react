@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Printer, Text, Row, Cut, render } from 'react-thermal-printer';
-import { calculateTotals } from './utils/calcTotals';
+import { calculateTotals, formatPrice } from './utils/calcTotals';
 
 const ReceiptPrinter = ({ cartItems, discount = 0, tax = 0, onPrintComplete }) => {
   // دالة لطباعة الفاتورة
@@ -18,11 +18,11 @@ const ReceiptPrinter = ({ cartItems, discount = 0, tax = 0, onPrintComplete }) =
           <Row
             key={item.product.id}
             left={`${item.product.name} x ${item.quantity}`}
-            right={`${(item.product.price * item.quantity).toFixed(2)} ر.س`}
+            right={`${formatPrice(item.product.price * item.quantity)} ر.س`}
           />
         ))}
         <Text>-----------------------------</Text>
-        <Row left="الإجمالي" right={`${total.toFixed(2)} ر.س`} />
+        <Row left="الإجمالي" right={`${formatPrice(total)} ر.س`} />
         {/* قطع الورقة بعد الطباعة */}
         <Cut />
       </Printer>
@@ -36,10 +36,11 @@ const ReceiptPrinter = ({ cartItems, discount = 0, tax = 0, onPrintComplete }) =
     }
   };
 
+
   return (
-    <div>
+    <div className="receipt-printer-container">
       {/* زر لطباعة الفاتورة */}
-      <button onClick={printReceipt}>طباعة الفاتورة</button>
+      <button className="print-button" onClick={printReceipt}>طباعة الفاتورة</button>
     </div>
   );
 };

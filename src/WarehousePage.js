@@ -162,7 +162,7 @@ const WarehousePage = ({ products = [], warehouse = [], onDeleteProduct, onAddTo
                           style={styles.input}
                         />
                       ) : (
-                        formatPrice(product?.price?.toFixed(2)) || '0.00'
+                        formatPrice(product?.price?.toFixed(2)) || '0'
                       )}
                     </td>
                     <td style={styles.td}>

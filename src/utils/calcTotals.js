@@ -7,3 +7,11 @@ export function calculateTotals(cartItems, discount = 0, tax = 0) {
   const total = subtotal - discountAmount + taxAmount;
   return { subtotal, discountAmount, taxAmount, total };
 }
+
+export function formatPrice(price) {
+  if (price % 1 === 0) {
+    return price.toFixed(0);
+  } else {
+    return price.toFixed(2);
+  }
+}

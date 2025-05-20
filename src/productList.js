@@ -1,5 +1,6 @@
 import React from 'react';
 import ProductForm from './productForm';
+import { formatPrice } from './utils/calcTotals';
 
 const ProductList = ({ products, onDelete, onModify, cartItems = [], editingProductId, onCancelEdit, onSaveEdit, products: allProducts }) => {
   if (products.length === 0) {
@@ -68,7 +69,7 @@ const ProductList = ({ products, onDelete, onModify, cartItems = [], editingProd
                 <td style={styles.td}>{product.barcode}</td>
                 <td style={styles.td}>{product.category}</td>
                 <td style={styles.td}>{product.quantity}</td>
-                <td style={styles.td}>{product.price} دينار عراقي</td>
+                <td style={styles.td}>{formatPrice(product.price)} دينار عراقي</td>
                 <td style={styles.td}>
                   <button 
                     onClick={() => onModify(product.id)}

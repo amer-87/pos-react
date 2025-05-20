@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { calculateTotals } from './utils/calcTotals';
+import { calculateTotals, formatPrice } from './utils/calcTotals';
 
 const Cart = ({ cartItems, onUpdateQuantity, discount = 0, tax = 0 }) => {
   const { subtotal, discountAmount, taxAmount, total } = calculateTotals(cartItems, discount, tax);
@@ -21,65 +21,37 @@ const Cart = ({ cartItems, onUpdateQuantity, discount = 0, tax = 0 }) => {
   };
 
   return (
-    <div style={{
-      padding: '20px',
-      border: '1px solid #eee',
-      borderRadius: '8px',
-      marginBottom: '20px'
-    }}>
-      <h2 style={{ marginBottom: '15px' }}>العربة</h2>
+    <div className="cart-container">
+      <h2 className="cart-title">العربة</h2>
       
       {cartItems.length === 0 ? (
-        <div>العربة فارغة</div>
+        <div className="empty-cart-message">العربة فارغة</div>
       ) : (
         <>
-          <div style={{ marginBottom: '15px' }}>
+          <div className="cart-items-list">
             {cartItems.map((item, index) => (
-              <div 
-                key={index}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px 0',
-                  borderBottom: '1px solid #eee'
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '1.1em' }}>{item.product.name}</div>
-                  <div style={{ fontSize: '0.9em', color: '#444', marginTop: '4px' }}>
-                    <span style={{ marginRight: '15px' }}>السعر: {item.product.price.toFixed(2)} ر.س</span>
-                    <span>الكمية: {item.quantity}</span>
+              <div key={index} className="cart-item">
+                <div className="cart-item-info">
+                  <div className="cart-item-name">{item.product.name}</div>
+                  <div className="cart-item-details">
+                    <span className="cart-item-price">السعر: {formatPrice(item.product.price)} ر.س</span>
+                    <span className="cart-item-quantity">الكمية: {item.quantity}</span>
                   </div>
                 </div>
-                <div style={{ fontWeight: 'bold', fontSize: '1em', minWidth: '80px', textAlign: 'right', color: '#222' }}>
-                  الإجمالي: {(item.product.price * item.quantity).toFixed(2)} ر.س
+                <div className="cart-item-total">
+                  الإجمالي: {formatPrice(item.product.price * item.quantity)} ر.س
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '15px' }}>
+                <div className="cart-item-buttons">
                   <button
                     onClick={() => handleDecrease(item.product.id, item.quantity)}
-                    style={{
-                      padding: '5px 10px',
-                      backgroundColor: '#e74c3c',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
+                    className="quantity-button decrease-button"
                     aria-label="تقليل الكمية"
                   >
                     -
                   </button>
                   <button
                     onClick={() => handleIncrease(item.product.id, item.quantity)}
-                    style={{
-                      padding: '5px 10px',
-                      backgroundColor: '#2ecc71',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
+                    className="quantity-button increase-button"
                     aria-label="زيادة الكمية"
                   >
                     +
@@ -89,46 +61,21 @@ const Cart = ({ cartItems, onUpdateQuantity, discount = 0, tax = 0 }) => {
             ))}
           </div>
           
-          <div style={{
-            padding: '10px 0',
-            borderTop: '1px solid #ddd',
-            fontWeight: 'bold',
-            display: 'flex',
-            justifyContent: 'space-between'
-          }}>
+          <div className="cart-summary-row">
             <span>الإجمالي الفرعي:</span>
-            <span>{subtotal.toFixed(2)} ر.س</span>
+            <span>{formatPrice(subtotal)} ر.س</span>
           </div>
-          <div style={{
-            padding: '10px 0',
-            borderTop: '1px solid #ddd',
-            fontWeight: 'bold',
-            display: 'flex',
-            justifyContent: 'space-between'
-          }}>
+          <div className="cart-summary-row">
             <span>الخصم:</span>
-            <span>{discountAmount.toFixed(2)} ر.س</span>
+            <span>{formatPrice(discountAmount)} ر.س</span>
           </div>
-          <div style={{
-            padding: '10px 0',
-            borderTop: '1px solid #ddd',
-            fontWeight: 'bold',
-            display: 'flex',
-            justifyContent: 'space-between'
-          }}>
+          <div className="cart-summary-row">
             <span>الضريبة:</span>
-            <span>{taxAmount.toFixed(2)} ر.س</span>
+            <span>{formatPrice(taxAmount)} ر.س</span>
           </div>
-          <div style={{
-            padding: '10px 0',
-            borderTop: '2px solid #000',
-            fontWeight: 'bold',
-            fontSize: '18px',
-            display: 'flex',
-            justifyContent: 'space-between'
-          }}>
+          <div className="cart-summary-total">
             <span>الإجمالي:</span>
-            <span>{total.toFixed(2)} ر.س</span>
+            <span>{formatPrice(total)} ر.س</span>
           </div>
         </>
       )}
